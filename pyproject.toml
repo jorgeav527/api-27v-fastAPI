@@ -1,0 +1,11 @@
+[project]
+name = "api-27v-fastapi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard]>=0.128.0",
+    "pymongo>=4.15.5",
+    "python-dotenv>=1.2.1",
+]
