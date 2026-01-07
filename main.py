@@ -38,7 +38,7 @@ class PostBase(BaseModel):
 async def check():
     return {"message": "Welcome to the API"}
 
-@app.get("/posts")
+@app.get("/post/list")
 async def get_all_post(db=Depends(get_db)):
     posts = []
     for post in db["post"].find():
@@ -119,3 +119,11 @@ async def edit_one_post(post_id: str, post: PostBase, db=Depends(get_db)):
         "content": updated_post["content"],
         "created": updated_post.get("created", datetime.now()).isoformat()
     }
+
+@app.delete("/post/delete/{post_id}")
+async def delete_one_post(post_id: str, db=Depends(get_db)):
+    post = db["post"].find_one({"_id": ObjectId(post_id)})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    db["post"].delete_one({"_id": ObjectId(post_id)})
+    return {"message": "Post deleted successfully"}
