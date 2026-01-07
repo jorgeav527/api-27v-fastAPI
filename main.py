@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Form, HTTPException
 from pymongo import MongoClient
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+from bson import ObjectId
 
 load_dotenv()
 
@@ -33,6 +34,33 @@ class PostBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     content: str
 
+@app.get("/posts")
+async def get_all_post(db=Depends(get_db)):
+    posts = []
+    for post in db["post"].find():
+        posts.append({
+            "id": str(post["_id"]),
+            "title": post["title"],
+            "content": post["content"],
+            "created": post.get("created", datetime.now()).isoformat()
+        })
+    return {"posts": posts}
+
+@app.get("/post/{post_id}")
+async def get_one_post(post_id: str, db=Depends(get_db)):
+    print(post_id)
+    post = db["post"].find_one({"_id": ObjectId(post_id)})
+    print(post)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return {
+        "id": str(post["_id"]),
+        "title": post["title"],
+        "content": post["content"],
+        "created": post.get("created", datetime.now()).isoformat()
+    }
+
+
 @app.post("/post/create-json-data")
 async def create_one_post_json_data(post: PostBase, db=Depends(get_db)):
     new_post = {
@@ -48,3 +76,26 @@ async def create_one_post_json_data(post: PostBase, db=Depends(get_db)):
         "content": created_post["content"],
         "created": created_post["created"].isoformat()
     }
+
+
+@app.post("/post/create-form-data")
+async def create_one_post_form_data(
+    title: str = Form(..., min_length=1, max_length=255),
+    content: str = Form(...),
+    db=Depends(get_db)
+):
+    new_post = {
+        "title": title,
+        "content": content,
+        "created": datetime.now()
+    }
+    result = db["post"].insert_one(new_post)
+    created_post = db["post"].find_one({"_id": result.inserted_id})
+    return {
+        "id": str(created_post["_id"]),
+        "title": created_post["title"],
+        "content": created_post["content"],
+        "created": created_post["created"].isoformat()
+    }
+
+
