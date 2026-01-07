@@ -34,6 +34,10 @@ class PostBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     content: str
 
+@app.get("/")
+async def check():
+    return {"message": "Welcome to the API"}
+
 @app.get("/posts")
 async def get_all_post(db=Depends(get_db)):
     posts = []
@@ -98,4 +102,20 @@ async def create_one_post_form_data(
         "created": created_post["created"].isoformat()
     }
 
-
+@app.put("/post/edit/{post_id}")
+async def edit_one_post(post_id: str, post: PostBase, db=Depends(get_db)):
+    existing_post = db["post"].find_one({"_id": ObjectId(post_id)})
+    if not existing_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    updated_data = {
+        "title": post.title,
+        "content": post.content
+    }
+    db["post"].update_one({"_id": ObjectId(post_id)}, {"$set": updated_data})
+    updated_post = db["post"].find_one({"_id": ObjectId(post_id)})
+    return {
+        "id": str(updated_post["_id"]),
+        "title": updated_post["title"],
+        "content": updated_post["content"],
+        "created": updated_post.get("created", datetime.now()).isoformat()
+    }
