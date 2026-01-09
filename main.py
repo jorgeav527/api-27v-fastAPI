@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# En otro achivo
 def get_db():
     client = MongoClient(MONGO_USER)
     try:
@@ -36,6 +36,7 @@ class PostBase(BaseModel):
 
 @app.get("/")
 async def check():
+    # Hacer un ping para ver si hay una coneccion a la base de datos
     return {"message": "Welcome to the API"}
 
 @app.get("/post/list")
@@ -52,12 +53,11 @@ async def get_all_post(db=Depends(get_db)):
 
 @app.get("/post/{post_id}")
 async def get_one_post(post_id: str, db=Depends(get_db)):
-    print(post_id)
     post = db["post"].find_one({"_id": ObjectId(post_id)})
-    print(post)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     return {
+        # generar un eschema para visualizar este retorno
         "id": str(post["_id"]),
         "title": post["title"],
         "content": post["content"],
